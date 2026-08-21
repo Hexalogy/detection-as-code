@@ -1,2 +1,2 @@
 # detection-as-code
-Let'
+Let's mess around with Sigma
