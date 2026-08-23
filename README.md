@@ -24,7 +24,7 @@ In a private/InPrivate browser window:
 
 This creates a successful sign-in event.
 
-Then wait 10–30 minutes and open:
+Then wait 5–10 minutes and open:
 
 `Microsoft Sentinel → law-dac-dev-001 → Logs   `
 
