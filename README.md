@@ -41,7 +41,7 @@ and you should be able to see the time when you log in
 
 ## 2. Generate failed sign-in event
 
-- ive modified the bicep detections/sentinel/scheduled/multiple-failed-signins.bicep file to
+- ive reduce the test threshold in the bicep detections/sentinel/scheduled/multiple-failed-signins.bicep file to 2
 - `| where FailedAttempts >= 2`
 - `description: 'LAB TEST ONLY: Triggers when an IP address generates two or more failed Entra ID sign-ins.'`
 
