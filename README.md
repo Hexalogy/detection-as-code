@@ -54,6 +54,11 @@ UPDATE: after some troubleshooting, looks like i needed to connect Microsoft Sen
 voila! now I can see the alert ("DaC - Multiple failed sign-ins from one IP") on Sentinel
 <img width="1469" height="654" alt="image" src="https://github.com/user-attachments/assets/f12afab3-0df0-4807-b6f5-77816624d433" />
 
+1:32 8/24/26:
+ive been trying to figure out how to get it to show on Defender and it has finally worked. I think the issue was that you see the changes until you sign out and then back in to force to 'refresh'
+
+<img width="2804" height="1232" alt="image" src="https://github.com/user-attachments/assets/c7d80f16-9129-4302-a12b-63afdb70f620" />
+
 
 
 
