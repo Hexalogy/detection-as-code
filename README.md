@@ -8,8 +8,8 @@
 the complete chain looks like this: 
 Entra sign-in → SigninLogs ingestion → KQL matches → Sentinel rule creates an alert.
 
-1\. Generate one safe sign-in event
------------------------------------
+# Prove an Alert
+## 1. Generate sign-in event
 
 In a private/InPrivate browser window:
 
@@ -39,7 +39,7 @@ SigninLogs
 ```
 and you should be able to see the time when you log in
 
-## Prove an Alert
+## 2. Generate failed sign-in event
 
 - ive modified the bicep detections/sentinel/scheduled/multiple-failed-signins.bicep file to
 - `| where FailedAttempts >= 2`
