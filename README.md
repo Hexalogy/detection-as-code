@@ -36,3 +36,24 @@ SigninLogs
 | project TimeGenerated, UserPrincipalName, ResultType, ResultDescription, IPAddress, AppDisplayName
 | order by TimeGenerated desc
 | take 50```
+```
+and you should be able to see the time when you log in
+
+# Trigger a Failed Log In Alert
+
+- ive modified the bicep detections/sentinel/scheduled/multiple-failed-signins.bicep file to
+- `| where FailedAttempts >= 2`
+- `description: 'LAB TEST ONLY: Triggers when an IP address generates two or more failed Entra ID sign-ins.'`
+
+- now ive created another account called "DaC Test User" (dac-test@renegadexwarslive.onmicrosoft.com) so I can purposely  sign-in with the wrong password to trigger the alert
+<img width="1555" height="634" alt="image" src="https://github.com/user-attachments/assets/b57cc00f-3648-41dc-9721-957730ee3d87" />
+
+UPDATE: after some troubleshooting, looks like i needed to connect Microsoft Sentinel to Microsoft Defender first, in order to do that, id have to add Sentintel Workspace onto Defender.
+<img width="1643" height="518" alt="image" src="https://github.com/user-attachments/assets/4477a93a-c609-4c26-848b-cbb040354022" />
+
+voila! now I can see the alert ("DaC - Multiple failed sign-ins from one IP") on Sentinel
+<img width="1469" height="654" alt="image" src="https://github.com/user-attachments/assets/f12afab3-0df0-4807-b6f5-77816624d433" />
+
+
+
+
