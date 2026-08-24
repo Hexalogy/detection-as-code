@@ -39,7 +39,7 @@ SigninLogs
 ```
 and you should be able to see the time when you log in
 
-# Trigger a Failed Log In Alert
+## Prove an Alert
 
 - ive modified the bicep detections/sentinel/scheduled/multiple-failed-signins.bicep file to
 - `| where FailedAttempts >= 2`
