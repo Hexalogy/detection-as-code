@@ -55,10 +55,33 @@ voila! now I can see the alert ("DaC - Multiple failed sign-ins from one IP") on
 <img width="1469" height="654" alt="image" src="https://github.com/user-attachments/assets/f12afab3-0df0-4807-b6f5-77816624d433" />
 
 1:32 8/24/26:
-ive been trying to figure out how to get it to show on Defender and it has finally worked. I think the issue was that you see the changes until you sign out and then back in to force to 'refresh'
+ive been trying to figure out how to get the Rules to show on Defender and it has finally worked. I think the issue was that you see the changes until you sign out and then back in to force to 'refresh'
 
 <img width="2804" height="1232" alt="image" src="https://github.com/user-attachments/assets/c7d80f16-9129-4302-a12b-63afdb70f620" />
 
+8/26/2026:
+Finally, got the Alerts and Incidents to show up in Microsoft Defender (MS has been nagging users to move away from Sentinel -> Defender)
 
+<img width="1873" height="826" alt="image" src="https://github.com/user-attachments/assets/9315a754-5661-4f0c-ac72-ad8972bde3d2" />
+👏👏
+
+The problem was URBAC permission issue
+
+Summary of the Full Fix Chain
+-----------------------------
+
+The complete resolution path across this whole troubleshooting session was:
+
+1.  Added the missing incidentConfiguration block to the Bicep template so the rule actually creates incidents from alerts.
+    
+2.  Confirmed the redeployed rule JSON matched intent (no ETag/drift issues).
+    
+3.  Ruled out the SigninLogs table plan (already Analytics).
+    
+4.  Confirmed detection was working end-to-end by finding rows in SecurityAlert/SecurityIncident directly.
+    
+5.  Assigned Azure RBAC roles (Sentinel Contributor/Reader/Responder) on the resource group.
+    
+6.  Found the true blocker: the **auto-imported URBAC role permission sets** were incomplete, missing "Alerts (manage)," and switching to "All read and manage permissions" fixed visibility.
 
 
