@@ -85,19 +85,19 @@ stages:
           - checkout: self
 
           - task: AzureCLI@2
-            displayName: What-if deployment
+            displayName: What-if Deployment
             inputs:
               azureSubscription: $(azureServiceConnection)
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
                 az deployment group what-if \
+                  --name "whatif-$(Build.BuildId)" \
                   --resource-group $(resourceGroupName) \
-                  --template-file infra/main.bicep \
-                  --parameters @infra/parameters/dev.bicepparam
+                  --parameters infra/parameters/dev.bicepparam
 
           - task: AzureCLI@2
-            displayName: Deploy detections
+            displayName: Deploy Detections
             inputs:
               azureSubscription: $(azureServiceConnection)
               scriptType: bash
@@ -106,5 +106,4 @@ stages:
                 az deployment group create \
                   --name "dac-$(Build.BuildId)" \
                   --resource-group $(resourceGroupName) \
-                  --template-file infra/main.bicep \
-                  --parameters @infra/parameters/dev.bicepparam
+                  --parameters infra/parameters/dev.bicepparam
