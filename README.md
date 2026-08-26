@@ -67,21 +67,21 @@ Finally, got the Alerts and Incidents to show up in Microsoft Defender (MS has b
 
 The problem was URBAC permission issue
 
+
 Summary of the Full Fix Chain
 -----------------------------
 
 The complete resolution path across this whole troubleshooting session was:
 
-1.  Added the missing incidentConfiguration block to the Bicep template so the rule actually creates incidents from alerts.
+1.  Added the missing `incidentConfiguration` block to the Bicep template so the rule actually creates incidents from alerts.
     
 2.  Confirmed the redeployed rule JSON matched intent (no ETag/drift issues).
     
-3.  Ruled out the SigninLogs table plan (already Analytics).
+3.  Ruled out the `SigninLogs` table plan (already Analytics).
     
-4.  Confirmed detection was working end-to-end by finding rows in SecurityAlert/SecurityIncident directly.
+4.  Confirmed detection was working end-to-end by finding rows in `SecurityAlert`/`SecurityIncident` directly.
     
 5.  Assigned Azure RBAC roles (Sentinel Contributor/Reader/Responder) on the resource group.
     
 6.  Found the true blocker: the **auto-imported URBAC role permission sets** were incomplete, missing "Alerts (manage)," and switching to "All read and manage permissions" fixed visibility.
-
 
