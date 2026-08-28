@@ -94,7 +94,7 @@ stages:
                 az deployment group what-if \
                   --name "whatif-$(Build.BuildId)" \
                   --resource-group $(resourceGroupName) \
-                  --parameters infra/parameters/dev.bicepparam
+                  --parameters infra/parameters/dev.bicepparam \
                   --template-file infra/main.bicep
 
           - task: AzureCLI@2
@@ -107,5 +107,5 @@ stages:
                 az deployment group create \
                   --name "dac-$(Build.BuildId)" \
                   --resource-group $(resourceGroupName) \
-                  --parameters infra/parameters/dev.bicepparam
+                  --parameters infra/parameters/dev.bicepparam \
                   --template-file infra/main.bicep
