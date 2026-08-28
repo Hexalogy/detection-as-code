@@ -95,6 +95,7 @@ stages:
                   --name "whatif-$(Build.BuildId)" \
                   --resource-group $(resourceGroupName) \
                   --parameters infra/parameters/dev.bicepparam
+                  --template-file infra/main.bicep
 
           - task: AzureCLI@2
             displayName: Deploy Detections
@@ -107,3 +108,4 @@ stages:
                   --name "dac-$(Build.BuildId)" \
                   --resource-group $(resourceGroupName) \
                   --parameters infra/parameters/dev.bicepparam
+                  --template-file infra/main.bicep
