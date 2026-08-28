@@ -14,9 +14,9 @@ logsource:
   product: azure
   service: signinlogs
 detection:
-  selection:
-    ResultType|not: "0"
-  condition: selection
+  successful_signin:
+    ResultType: "0"
+  condition: not successful_signin
 falsepositives:
   - Users entering incorrect passwords
   - Legacy clients using stale credentials
