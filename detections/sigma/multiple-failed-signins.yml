@@ -1,0 +1,24 @@
+title: Multiple Failed Microsoft Entra ID Sign-ins From a Single IP
+id: 11111111-1111-1111-1111-111111111111
+status: experimental
+description: >
+  Detects two or more failed Microsoft Entra ID sign-ins from the same
+  source IP address within a 15-minute window. The threshold is intentionally
+  reduced for the DaC lab and should be increased before production use.
+author: Hexalogy
+date: 2026-08-27
+tags:
+  - attack.credential_access
+  - attack.t1110
+logsource:
+  product: azure
+  service: signinlogs
+detection:
+  selection:
+    ResultType|not: "0"
+  condition: selection
+falsepositives:
+  - Users entering incorrect passwords
+  - Legacy clients using stale credentials
+  - Misconfigured applications or service accounts
+level: medium
