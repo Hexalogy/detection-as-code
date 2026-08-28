@@ -85,3 +85,5 @@ The complete resolution path across this whole troubleshooting session was:
     
 6.  Found the true blocker: the **auto-imported URBAC role permission sets** were incomplete, missing "Alerts (manage)," and switching to "All read and manage permissions" fixed visibility.
 
+## Phase 2 - Added `detections/sigma/multiple-failed-signins.yml`
+
