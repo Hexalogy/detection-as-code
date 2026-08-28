@@ -55,21 +55,22 @@ stages:
         fi
       displayName: Validate Sigma rules
 
-    - bash: |
-        python3 - <<'PY'
-        import pathlib
-        import sys
-        import yaml
+    - task: PowerShell@2
+      displayName: Install PowerShell YAML module
+      inputs:
+        targetType: inline
+        pwsh: true
+        script: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module powershell-yaml -Scope CurrentUser -Force
 
-        rule_files = list(pathlib.Path("detections/sentinel").rglob("*.bicep"))
-        if not rule_files:
-            print("No Sentinel Bicep rules found.")
-            sys.exit(1)
-
-        print(f"Validated discovery of {len(rule_files)} Sentinel rule file(s).")
-        PY
-      displayName: Check detection structure
-
+    - task: PowerShell@2
+      displayName: Validate detection contracts
+      inputs:
+        targetType: filePath
+        filePath: scripts/validate.ps1
+        pwsh: true
+    
 - stage: Deploy_Dev
   displayName: Deploy to Sentinel dev
   dependsOn: Validate
@@ -94,9 +95,10 @@ stages:
                 az deployment group what-if \
                   --name "whatif-$(Build.BuildId)" \
                   --resource-group $(resourceGroupName) \
-                  --parameters infra/parameters/dev.bicepparam
+                  --parameters infra/parameters/dev.bicepparam \
                   --template-file infra/main.bicep
 
+                  
           - task: AzureCLI@2
             displayName: Deploy Detections
             inputs:
@@ -107,5 +109,5 @@ stages:
                 az deployment group create \
                   --name "dac-$(Build.BuildId)" \
                   --resource-group $(resourceGroupName) \
-                  --parameters infra/parameters/dev.bicepparam
+                  --parameters infra/parameters/dev.bicepparam \
                   --template-file infra/main.bicep
