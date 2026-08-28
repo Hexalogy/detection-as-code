@@ -1,0 +1,67 @@
+rule:
+  id: 11111111-1111-1111-1111-111111111111
+  name: multiple-failed-signins
+  sentinel_bicep: detections/sentinel/scheduled/multiple-failed-signins.bicep
+  sigma_rule: detections/sigma/multiple-failed-signins.yml
+
+telemetry:
+  table: SigninLogs
+  time_window: 15m
+  threshold: 2
+  grouping_field: IPAddress
+  successful_result_type: "0"
+
+tests:
+  - name: triggers_when_two_failed_signins_share_an_ip
+    type: positive
+    events:
+      - TimeGenerated: "2026-08-28T00:00:00Z"
+        IPAddress: "198.51.100.10"
+        UserPrincipalName: "user1@contoso.example"
+        ResultType: "50126"
+      - TimeGenerated: "2026-08-28T00:05:00Z"
+        IPAddress: "198.51.100.10"
+        UserPrincipalName: "user2@contoso.example"
+        ResultType: "50126"
+    expected:
+      matching_rows: 1
+      failed_attempts: 2
+      ip_address: "198.51.100.10"
+
+  - name: does_not_trigger_for_one_failed_signin
+    type: negative
+    events:
+      - TimeGenerated: "2026-08-28T00:00:00Z"
+        IPAddress: "198.51.100.11"
+        UserPrincipalName: "user1@contoso.example"
+        ResultType: "50126"
+    expected:
+      matching_rows: 0
+
+  - name: ignores_successful_signins
+    type: negative
+    events:
+      - TimeGenerated: "2026-08-28T00:00:00Z"
+        IPAddress: "198.51.100.12"
+        UserPrincipalName: "user1@contoso.example"
+        ResultType: "0"
+      - TimeGenerated: "2026-08-28T00:05:00Z"
+        IPAddress: "198.51.100.12"
+        UserPrincipalName: "user2@contoso.example"
+        ResultType: "0"
+    expected:
+      matching_rows: 0
+
+  - name: does_not_combine_failures_across_ips
+    type: negative
+    events:
+      - TimeGenerated: "2026-08-28T00:00:00Z"
+        IPAddress: "198.51.100.13"
+        UserPrincipalName: "user1@contoso.example"
+        ResultType: "50126"
+      - TimeGenerated: "2026-08-28T00:05:00Z"
+        IPAddress: "198.51.100.14"
+        UserPrincipalName: "user2@contoso.example"
+        ResultType: "50126"
+    expected:
+      matching_rows: 0
