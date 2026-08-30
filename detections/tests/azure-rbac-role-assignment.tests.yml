@@ -1,0 +1,53 @@
+rule:
+  id: 11111111-1111-1111-1111-111111111112
+  name: azure-rbac-role-assignment
+  sentinel_bicep: detections/sentinel/scheduled/azure-rbac-role-assignment.bicep
+  sigma_rule: detections/sigma/azure-rbac-role-assignment.yml
+
+telemetry:
+  table: AzureActivity
+  time_window: 1h
+  threshold: 1
+  grouping_field: Caller
+  successful_activity_status: Success
+  role_assignment_operation: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE
+
+tests:
+  - name: triggers_on_successful_role_assignment_write
+    type: positive
+    events:
+      - TimeGenerated: '2026-08-30T02:10:02Z'
+        OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE
+        ActivityStatusValue: Success
+        Caller: admin@example.invalid
+        CallerIpAddress: 198.51.100.37
+        ResourceGroup: RG-DAC-LAB-DEV
+        Properties: '{"statusCode":"Created","eventCategory":"Administrative"}'
+    expected:
+      matching_rows: 1
+
+  - name: ignores_failed_role_assignment_write
+    type: negative
+    events:
+      - TimeGenerated: '2026-08-30T02:10:02Z'
+        OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE
+        ActivityStatusValue: Failed
+        Caller: admin@example.invalid
+        CallerIpAddress: 198.51.100.37
+        ResourceGroup: RG-DAC-LAB-DEV
+        Properties: '{"statusCode":"Forbidden","eventCategory":"Administrative"}'
+    expected:
+      matching_rows: 0
+
+  - name: ignores_unrelated_successful_operation
+    type: negative
+    events:
+      - TimeGenerated: '2026-08-30T02:10:02Z'
+        OperationNameValue: MICROSOFT.COMPUTE/VIRTUALMACHINES/WRITE
+        ActivityStatusValue: Success
+        Caller: admin@example.invalid
+        CallerIpAddress: 198.51.100.37
+        ResourceGroup: RG-DAC-LAB-DEV
+        Properties: '{"statusCode":"Created","eventCategory":"Administrative"}'
+    expected:
+      matching_rows: 0
