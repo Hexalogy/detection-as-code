@@ -7,13 +7,16 @@ rule:
 telemetry:
   table: AzureActivity
   time_window: 1h
-  threshold: 1
   grouping_field: Caller
-  successful_activity_status: Success
   role_assignment_operation: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE
-  required_query_patterns:
-    - 'OperationNameValue =~ "MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE"'
-    - 'ActivityStatusValue =~ "Success"'
+  successful_activity_status: Success
+
+validation:
+  required_bicep_patterns:
+    - 'AzureActivity'
+    - 'OperationNameValue\s*=~\s*["'']MICROSOFT\.AUTHORIZATION/ROLEASSIGNMENTS/WRITE["'']'
+    - 'ActivityStatusValue\s*=~\s*["'']Success["'']'
+    - 'T1098'
 
 tests:
   - name: triggers_on_successful_role_assignment_write
