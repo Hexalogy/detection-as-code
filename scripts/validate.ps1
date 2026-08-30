@@ -125,15 +125,14 @@ try {
 
         $requiredBicepChecks = @(
             @{ Pattern = '(?im)^\s*param\s+ruleGuid\s+string'; Description = 'stable ruleGuid parameter' }
-            @{ Pattern = '(?im)^\s*SigninLogs\s*$'; Description = 'SigninLogs telemetry source' }
             @{ Pattern = 'TimeGenerated\s*>\s*ago\('; Description = 'query time bound' }
-            @{ Pattern = 'ResultType\s*!=\s*["'']0["'']'; Description = 'failed-sign-in filter' }
-            @{ Pattern = '\|\s*summarize\b'; Description = 'aggregation step' }
-            @{ Pattern = 'FailedAttempts\s*>=\s*\d+'; Description = 'failed-attempt threshold' }
-            @{ Pattern = 'T1110'; Description = 'MITRE technique T1110' }
             @{ Pattern = '\bdescription\s*:'; Description = 'rule description' }
             @{ Pattern = '\bcustomDetails\s*:'; Description = 'custom details' }
             @{ Pattern = '\bincidentConfiguration\s*:'; Description = 'incident configuration' }
+            @{ Pattern = '\btactics\s*:'; Description = 'MITRE tactic mapping' }
+            @{ Pattern = '\btechniques\s*:'; Description = 'MITRE technique mapping' }
+            @{ Pattern = '\bqueryFrequency\s*:'; Description = 'query frequency' }
+            @{ Pattern = '\bqueryPeriod\s*:'; Description = 'query period' }
         )
 
         foreach ($check in $requiredBicepChecks) {
@@ -226,28 +225,14 @@ try {
                 }
             }
 
-            $referencedBicepContent = Get-Content -LiteralPath $referencedBicep -Raw
-            $threshold = [int]$testDocument.telemetry.threshold
-            $timeWindow = [regex]::Escape([string]$testDocument.telemetry.time_window)
-            $successfulResultType = [regex]::Escape([string]$testDocument.telemetry.successful_result_type)
+        $referencedBicepContent = Get-Content -LiteralPath $referencedBicep -Raw
 
-            Require-Text `
-                -Content $referencedBicepContent `
-                -Pattern "FailedAttempts\s*>=\s*$threshold\b" `
-                -Description "threshold matching telemetry.threshold ($threshold)" `
-                -Path $referencedBicep
-
-            Require-Text `
-                -Content $referencedBicepContent `
-                -Pattern "bin\(TimeGenerated,\s*$timeWindow\)" `
-                -Description "aggregation window matching telemetry.time_window ($($testDocument.telemetry.time_window))" `
-                -Path $referencedBicep
-
-            Require-Text `
-                -Content $referencedBicepContent `
-                -Pattern "ResultType\s*!=\s*[""']$successfulResultType[""']" `
-                -Description "successful result exclusion matching telemetry.successful_result_type ($($testDocument.telemetry.successful_result_type))" `
-                -Path $referencedBicep
+        $telemetryTable = [regex]::Escape([string]$testDocument.telemetry.table)
+        Require-Text `
+            -Content $referencedBicepContent `
+            -Pattern "(?im)^\s*$telemetryTable\s*$" `
+            -Description "telemetry table matching telemetry.table ($($testDocument.telemetry.table))" `
+            -Path $referencedBicep
         }
     }
 
