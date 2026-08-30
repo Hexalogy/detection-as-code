@@ -11,6 +11,9 @@ telemetry:
   grouping_field: Caller
   successful_activity_status: Success
   role_assignment_operation: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE
+  required_query_patterns:
+    - 'OperationNameValue =~ "MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE"'
+    - 'ActivityStatusValue =~ "Success"'
 
 tests:
   - name: triggers_on_successful_role_assignment_write
