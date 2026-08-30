@@ -11,8 +11,9 @@ resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existin
   name: workspaceName
 }
 
-resource rule 'Microsoft.SecurityInsights/alertRules@2024-03-01-preview' = {
-  name: '${workspace.name}/${ruleGuid}'
+resource rule 'Microsoft.SecurityInsights/alertRules@2024-03-01' = {
+  scope: workspace
+  name: ruleGuid
   kind: 'Scheduled'
   properties: {
     displayName: 'DaC - Azure RBAC role assignment created'
