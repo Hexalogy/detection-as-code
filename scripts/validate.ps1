@@ -63,18 +63,19 @@ function Get-YamlDocuments {
     }
 
     try {
-        $document = $content | ConvertFrom-Yaml
+        # Do not use -AllDocuments here. One Sigma rule/test contract per file.
+        # The unary comma preserves a YAML mapping as one PowerShell object.
+        $document = ,($content | ConvertFrom-Yaml)
     }
     catch {
         Fail "Invalid YAML in $Path. $($_.Exception.Message)"
     }
 
-    if ($null -eq $document) {
+    if ($null -eq $document -or $document.Count -eq 0 -or $null -eq $document[0]) {
         Fail "No YAML document was found in $Path"
     }
 
-    # Return one array element, even when the YAML root is itself enumerable.
-    return ,$document
+    return $document
 }
 
 function Get-OptionalProperty {
