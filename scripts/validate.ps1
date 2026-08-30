@@ -236,6 +236,16 @@ try {
         }
     }
 
+    if ($null -ne $testDocument.telemetry.required_query_patterns) {
+        foreach ($pattern in @($testDocument.telemetry.required_query_patterns)) {
+            Require-Text `
+                -Content $referencedBicepContent `
+                -Pattern ([regex]::Escape([string]$pattern)) `
+                -Description "required query behavior: $pattern" `
+                -Path $referencedBicep
+        }
+    }
+
     Write-Host ''
     Write-Host 'Detection contract validation passed.' -ForegroundColor Green
     Write-Host "Validated $($sigmaFiles.Count) Sigma rule(s), $($bicepFiles.Count) Sentinel Bicep rule(s), and $($testFiles.Count) test contract(s)." -ForegroundColor Green
