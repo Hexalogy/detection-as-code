@@ -1,0 +1,28 @@
+title: Azure RBAC Role Assignment Created
+id: REPLACE-WITH-NEW-GUID
+status: experimental
+description: >
+  Detects successful Azure RBAC role-assignment creation through Azure Resource Manager.
+  Unexpected assignments can grant persistence or escalate privileges.
+author: Hexalogy
+date: 2026-08-29
+references:
+  - https://attack.mitre.org/techniques/T1098/
+tags:
+  - attack.persistence
+  - attack.privilege_escalation
+  - attack.t1098
+logsource:
+  product: azure
+  service: activitylogs
+detection:
+  selection_operation:
+    OperationNameValue|endswith: '/ROLEASSIGNMENTS/WRITE'
+  selection_success:
+    ActivityStatusValue: Success
+  condition: selection_operation and selection_success
+falsepositives:
+  - Approved administrator role assignments
+  - Infrastructure-as-code deployments
+  - Identity and access management automation
+level: high
