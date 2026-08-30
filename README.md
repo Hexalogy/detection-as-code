@@ -68,7 +68,7 @@ Finally, got the **Alerts** and Incidents to show up in Microsoft Defender (MS h
 The problem was URBAC permission issue
 
 
-Summary of the Full Fix Chain
+## 3. Summary of the Full Fix Chain
 -----------------------------
 
 The complete resolution path across this whole troubleshooting session was:
@@ -86,4 +86,23 @@ The complete resolution path across this whole troubleshooting session was:
 6.  Found the true blocker: the **auto-imported URBAC role permission sets** were incomplete, missing "Alerts (manage)," and switching to "All read and manage permissions" fixed visibility.
 
 ## Phase 2 - Added `detections/sigma/multiple-failed-signins.yml`
+
+So far I have:
+
+- A deployable Sentinel Bicep rule
+
+- A human-readable Sigma counterpart
+
+- A test contract with positive and negative cases
+
+- A static validation gate that checks rule/test consistency
+
+- CI/CD with build, validation, what-if, and deployment
+
+
+## Phase 3 - Build a Second Detection
+
+### Connect Azure Activity in Azure Monitor
+
+<img width="1220" height="597" alt="image" src="https://github.com/user-attachments/assets/0cea5fe8-c623-4d95-97a1-6e32c5607d0f" />
 
