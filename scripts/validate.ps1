@@ -63,18 +63,21 @@ function Get-YamlDocuments {
     }
 
     try {
-        $documents = $content | ConvertFrom-Yaml -AllDocuments
+        # The unary comma ensures a single YAML mapping is retained as one
+        # document rather than being enumerated as its individual entries.
+        $documents = @(
+            $content | ConvertFrom-Yaml -AllDocuments | ForEach-Object { ,$_ }
+        )
     }
     catch {
         Fail "Invalid YAML in $Path. $($_.Exception.Message)"
     }
-
-    if ($null -eq $documents -or @($documents).Count -eq 0) {
+    
+    if ($documents.Count -eq 0) {
         Fail "No YAML document was found in $Path"
     }
-
-    return @($documents)
-}
+    
+    return $documents
 
 function Get-OptionalProperty {
     param(
