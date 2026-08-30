@@ -15,7 +15,6 @@ module azureRbacRoleAssignment '../detections/sentinel/scheduled/azure-rbac-role
   name: 'azure-rbac-role-assignment-rule'
   params: {
     workspaceName: workspaceName
-    location: location
     ruleGuid: azureRbacRoleAssignmentRuleGuid
   }
 }
