@@ -74,7 +74,7 @@ function Get-YamlDocuments {
     }
 
     # Return one array element, even when the YAML root is itself enumerable.
-    return @(,$document)
+    return ,$document
 }
 
 function Get-OptionalProperty {
@@ -146,7 +146,7 @@ try {
             Fail "Sigma rule is empty: $($sigmaFile.FullName)"
         }
 
-        $sigmaDocuments = Get-YamlDocuments -Path $sigmaFile.FullName
+        $sigmaDocuments = @(Get-YamlDocuments -Path $sigmaFile.FullName)
 
         if ($sigmaDocuments.Count -ne 1) {
             Fail "$($sigmaFile.FullName) must contain exactly one Sigma rule document."
