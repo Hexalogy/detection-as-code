@@ -245,7 +245,7 @@ try {
     $validatedContractCount = 0
 
     foreach ($testFile in $testFiles) {
-        $testDocuments = Get-YamlDocuments -Path $testFile.FullName
+        $testDocuments = @(Get-YamlDocuments -Path $testFile.FullName)
 
         foreach ($testDocument in $testDocuments) {
             $rule = Get-OptionalProperty -Object $testDocument -Name 'rule'
