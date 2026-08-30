@@ -8,8 +8,16 @@ telemetry:
   table: SigninLogs
   time_window: 15m
   threshold: 2
-  grouping_field: IPAddress
-  successful_result_type: "0"
+  grouping_field: UserPrincipalName
+
+validation:
+  required_bicep_patterns:
+    - 'SigninLogs'
+    - 'ResultType\s*!=\s*["'']0["'']'
+    - '\|\s*summarize\b'
+    - 'FailedAttempts\s*>=\s*2'
+    - 'bin\(TimeGenerated,\s*15m\)'
+    - 'T1110'
 
 tests:
   - name: triggers_when_two_failed_signins_share_an_ip
