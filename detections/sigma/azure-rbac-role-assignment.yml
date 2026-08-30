@@ -1,5 +1,5 @@
 title: Azure RBAC Role Assignment Created
-id: REPLACE-WITH-NEW-GUID
+id: 11111111-1111-1111-1111-111111111112
 status: experimental
 description: >
   Detects successful Azure RBAC role-assignment creation through Azure Resource Manager.
