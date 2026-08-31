@@ -8,14 +8,14 @@ description: >
 author: Hexalogy
 date: 2026-08-27
 tags:
-  - attack.credential_access
+  - attack.credential-access
   - attack.t1110
 logsource:
   product: azure
   service: signinlogs
 detection:
   successful_signin:
-    ResultType: "0"
+    ResultType: 0
   condition: not successful_signin
 falsepositives:
   - Users entering incorrect passwords
