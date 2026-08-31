@@ -15,7 +15,7 @@ logsource:
   service: signinlogs
 detection:
   successful_signin:
-    ResultType: "0"
+    ResultType: 0
   condition: not successful_signin
 falsepositives:
   - Users entering incorrect passwords
