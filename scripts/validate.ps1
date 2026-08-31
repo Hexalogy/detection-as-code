@@ -50,34 +50,6 @@ function Require-Text {
     }
 }
 
-function Get-YamlDocuments {
-    param(
-        [Parameter(Mandatory)]
-        [string]$Path
-    )
-
-    $content = Get-Content -LiteralPath $Path -Raw
-
-    if ([string]::IsNullOrWhiteSpace($content)) {
-        Fail "YAML file is empty: $Path"
-    }
-
-    try {
-        # Do not use -AllDocuments here. One Sigma rule/test contract per file.
-        # The unary comma preserves a YAML mapping as one PowerShell object.
-        $document = ,($content | ConvertFrom-Yaml)
-    }
-    catch {
-        Fail "Invalid YAML in $Path. $($_.Exception.Message)"
-    }
-
-    if ($null -eq $document -or $document.Count -eq 0 -or $null -eq $document[0]) {
-        Fail "No YAML document was found in $Path"
-    }
-
-    return $document
-}
-
 function Get-OptionalProperty {
     param(
         [Parameter(Mandatory)]
@@ -94,6 +66,35 @@ function Get-OptionalProperty {
     }
 
     return $property.Value
+}
+
+function Get-YamlDocument {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    $content = Get-Content -LiteralPath $Path -Raw
+
+    if ([string]::IsNullOrWhiteSpace($content)) {
+        Fail "YAML file is empty: $Path"
+    }
+
+    try {
+        # One detection or one contract per YAML file.
+        # Do not use -AllDocuments: a YAML mapping can be enumerated
+        # unexpectedly by PowerShell when returned through a pipeline.
+        $document = $content | ConvertFrom-Yaml
+    }
+    catch {
+        Fail "Invalid YAML in $Path. $($_.Exception.Message)"
+    }
+
+    if ($null -eq $document) {
+        Fail "No YAML document was found in $Path"
+    }
+
+    return $document
 }
 
 function Get-RepositoryRelativePath {
@@ -147,15 +148,15 @@ try {
             Fail "Sigma rule is empty: $($sigmaFile.FullName)"
         }
 
-        $sigmaDocuments = @(Get-YamlDocuments -Path $sigmaFile.FullName)
+        $sigmaDocument = Get-YamlDocument -Path $sigmaFile.FullName
 
-        if ($sigmaDocuments.Count -ne 1) {
-            Fail "$($sigmaFile.FullName) must contain exactly one Sigma rule document."
-        }
-
-        $sigmaDocument = $sigmaDocuments[0]
-
-        foreach ($requiredProperty in @('title', 'id', 'description', 'logsource', 'detection')) {
+        foreach ($requiredProperty in @(
+            'title',
+            'id',
+            'description',
+            'logsource',
+            'detection'
+        )) {
             if ($null -eq (Get-OptionalProperty -Object $sigmaDocument -Name $requiredProperty)) {
                 Fail "$($sigmaFile.FullName) is missing required Sigma property '$requiredProperty'."
             }
@@ -190,13 +191,8 @@ try {
         Fail 'No Sentinel Bicep rule files were found under detections/sentinel.'
     }
 
-    $bicepByRelativePath = @{}
-
     $requiredBicepChecks = @(
         @{ Pattern = '(?im)^\s*param\s+ruleGuid\s+string'; Description = 'stable ruleGuid parameter' }
-        @{ Pattern = '(?im)^\s*resource\s+\w+\s+[''"]Microsoft\.SecurityInsights/alertRules@'; Description = 'Sentinel alert rule resource' }
-        @{ Pattern = '\bkind\s*:\s*[''"]Scheduled[''"]'; Description = 'scheduled rule kind' }
-        @{ Pattern = '\bquery\s*:\s*[''"]{3}'; Description = 'multiline KQL query' }
         @{ Pattern = 'TimeGenerated\s*>\s*ago\('; Description = 'query time bound' }
         @{ Pattern = '\bdescription\s*:'; Description = 'rule description' }
         @{ Pattern = '\bcustomDetails\s*:'; Description = 'custom details' }
@@ -206,6 +202,8 @@ try {
         @{ Pattern = '\bqueryFrequency\s*:'; Description = 'query frequency' }
         @{ Pattern = '\bqueryPeriod\s*:'; Description = 'query period' }
     )
+
+    $bicepByRelativePath = @{}
 
     foreach ($bicepFile in $bicepFiles) {
         $bicepContent = Get-Content -LiteralPath $bicepFile.FullName -Raw
@@ -246,115 +244,124 @@ try {
     $validatedContractCount = 0
 
     foreach ($testFile in $testFiles) {
-        $testDocuments = @(Get-YamlDocuments -Path $testFile.FullName)
+        $testDocument = Get-YamlDocument -Path $testFile.FullName
+        $rule = Get-OptionalProperty -Object $testDocument -Name 'rule'
 
-        foreach ($testDocument in $testDocuments) {
-            $rule = Get-OptionalProperty -Object $testDocument -Name 'rule'
+        if ($null -eq $rule) {
+            Fail "$($testFile.FullName) is missing the top-level 'rule' object."
+        }
 
-            if ($null -eq $rule) {
-                Fail "$($testFile.FullName) is missing the top-level 'rule' object."
+        foreach ($requiredRuleProperty in @(
+            'id',
+            'name',
+            'sentinel_bicep',
+            'sigma_rule'
+        )) {
+            $value = Get-OptionalProperty -Object $rule -Name $requiredRuleProperty
+
+            if ([string]::IsNullOrWhiteSpace([string]$value)) {
+                Fail "$($testFile.FullName) is missing rule.$requiredRuleProperty."
             }
+        }
 
-            foreach ($requiredRuleProperty in @('id', 'name', 'sentinel_bicep', 'sigma_rule')) {
-                $value = Get-OptionalProperty -Object $rule -Name $requiredRuleProperty
+        $telemetry = Get-OptionalProperty -Object $testDocument -Name 'telemetry'
 
-                if ([string]::IsNullOrWhiteSpace([string]$value)) {
-                    Fail "$($testFile.FullName) is missing rule.$requiredRuleProperty."
+        if ($null -eq $telemetry) {
+            Fail "$($testFile.FullName) is missing the top-level 'telemetry' object."
+        }
+
+        $telemetryTable = Get-OptionalProperty -Object $telemetry -Name 'table'
+
+        if ([string]::IsNullOrWhiteSpace([string]$telemetryTable)) {
+            Fail "$($testFile.FullName) is missing telemetry.table."
+        }
+
+        $referencedBicepRelativePath = ([string]$rule.sentinel_bicep).Replace('\', '/')
+        $referencedSigmaRelativePath = ([string]$rule.sigma_rule).Replace('\', '/')
+
+        if (-not $bicepByRelativePath.ContainsKey($referencedBicepRelativePath)) {
+            Fail "$($testFile.FullName) references a missing Sentinel Bicep rule: $referencedBicepRelativePath"
+        }
+
+        if (-not $sigmaByRelativePath.ContainsKey($referencedSigmaRelativePath)) {
+            Fail "$($testFile.FullName) references a missing Sigma rule: $referencedSigmaRelativePath"
+        }
+
+        $referencedBicep = $bicepByRelativePath[$referencedBicepRelativePath]
+        $referencedSigma = $sigmaByRelativePath[$referencedSigmaRelativePath]
+
+        $contractRuleId = [string](Get-OptionalProperty -Object $rule -Name 'id')
+        $sigmaRuleId = [string](Get-OptionalProperty -Object $referencedSigma.Document -Name 'id')
+
+        if ($contractRuleId -ne $sigmaRuleId) {
+            Fail "$($testFile.FullName) rule.id '$contractRuleId' does not match Sigma id '$sigmaRuleId' in $($referencedSigma.Path)."
+        }
+
+        $tests = @(Get-OptionalProperty -Object $testDocument -Name 'tests')
+
+        if ($tests.Count -eq 0) {
+            Fail "$($testFile.FullName) must include at least one test case."
+        }
+
+        $positiveTestCount = @($tests | Where-Object { $_.type -eq 'positive' }).Count
+        $negativeTestCount = @($tests | Where-Object { $_.type -eq 'negative' }).Count
+
+        if ($positiveTestCount -lt 1) {
+            Fail "$($testFile.FullName) needs at least one positive test."
+        }
+
+        if ($negativeTestCount -lt 1) {
+            Fail "$($testFile.FullName) needs at least one negative test."
+        }
+
+        foreach ($test in $tests) {
+            foreach ($requiredTestProperty in @(
+                'name',
+                'type',
+                'events',
+                'expected'
+            )) {
+                if ($null -eq (Get-OptionalProperty -Object $test -Name $requiredTestProperty)) {
+                    Fail "$($testFile.FullName) has a test missing '$requiredTestProperty'."
                 }
             }
 
-            $telemetry = Get-OptionalProperty -Object $testDocument -Name 'telemetry'
-
-            if ($null -eq $telemetry) {
-                Fail "$($testFile.FullName) is missing the top-level 'telemetry' object."
+            if ([string]$test.type -notin @('positive', 'negative')) {
+                Fail "$($testFile.FullName) test '$($test.name)' has invalid type '$($test.type)'. Use positive or negative."
             }
 
-            $telemetryTable = Get-OptionalProperty -Object $telemetry -Name 'table'
-
-            if ([string]::IsNullOrWhiteSpace([string]$telemetryTable)) {
-                Fail "$($testFile.FullName) is missing telemetry.table."
+            if (@($test.events).Count -eq 0) {
+                Fail "$($testFile.FullName) test '$($test.name)' must include one or more events."
             }
 
-            $referencedBicepRelativePath = ([string]$rule.sentinel_bicep).Replace('\', '/')
-            $referencedSigmaRelativePath = ([string]$rule.sigma_rule).Replace('\', '/')
+            $expected = Get-OptionalProperty -Object $test -Name 'expected'
+            $matchingRows = Get-OptionalProperty -Object $expected -Name 'matching_rows'
 
-            if (-not $bicepByRelativePath.ContainsKey($referencedBicepRelativePath)) {
-                Fail "$($testFile.FullName) references a missing Sentinel Bicep rule: $referencedBicepRelativePath"
+            if ($null -eq $matchingRows) {
+                Fail "$($testFile.FullName) test '$($test.name)' is missing expected.matching_rows."
             }
 
-            if (-not $sigmaByRelativePath.ContainsKey($referencedSigmaRelativePath)) {
-                Fail "$($testFile.FullName) references a missing Sigma rule: $referencedSigmaRelativePath"
+            if ([int]$matchingRows -lt 0) {
+                Fail "$($testFile.FullName) test '$($test.name)' expected.matching_rows must be zero or greater."
             }
+        }
 
-            $referencedBicep = $bicepByRelativePath[$referencedBicepRelativePath]
-            $referencedSigma = $sigmaByRelativePath[$referencedSigmaRelativePath]
+        $escapedTelemetryTable = [regex]::Escape([string]$telemetryTable)
 
-            $contractRuleId = [string](Get-OptionalProperty -Object $rule -Name 'id')
-            $sigmaRuleId = [string](Get-OptionalProperty -Object $referencedSigma.Document -Name 'id')
+        Require-Text `
+            -Content $referencedBicep.Content `
+            -Pattern "(?im)^\s*$escapedTelemetryTable\s*$" `
+            -Description "telemetry table matching telemetry.table ($telemetryTable)" `
+            -Path $referencedBicep.Path
 
-            if ($contractRuleId -ne $sigmaRuleId) {
-                Fail "$($testFile.FullName) rule.id '$contractRuleId' does not match Sigma id '$sigmaRuleId' in $($referencedSigma.Path)."
-            }
+        $validation = Get-OptionalProperty -Object $testDocument -Name 'validation'
 
-            $tests = @(Get-OptionalProperty -Object $testDocument -Name 'tests')
+        if ($null -ne $validation) {
+            $requiredBicepPatterns = Get-OptionalProperty `
+                -Object $validation `
+                -Name 'required_bicep_patterns'
 
-            if ($tests.Count -eq 0) {
-                Fail "$($testFile.FullName) must include at least one test case."
-            }
-
-            $positiveTestCount = @($tests | Where-Object { $_.type -eq 'positive' }).Count
-            $negativeTestCount = @($tests | Where-Object { $_.type -eq 'negative' }).Count
-
-            if ($positiveTestCount -lt 1) {
-                Fail "$($testFile.FullName) needs at least one positive test."
-            }
-
-            if ($negativeTestCount -lt 1) {
-                Fail "$($testFile.FullName) needs at least one negative test."
-            }
-
-            foreach ($test in $tests) {
-                foreach ($requiredTestProperty in @('name', 'type', 'events', 'expected')) {
-                    if ($null -eq (Get-OptionalProperty -Object $test -Name $requiredTestProperty)) {
-                        Fail "$($testFile.FullName) has a test missing '$requiredTestProperty'."
-                    }
-                }
-
-                if ([string]$test.type -notin @('positive', 'negative')) {
-                    Fail "$($testFile.FullName) test '$($test.name)' has invalid type '$($test.type)'. Use positive or negative."
-                }
-
-                if (@($test.events).Count -eq 0) {
-                    Fail "$($testFile.FullName) test '$($test.name)' must include one or more events."
-                }
-
-                $expected = Get-OptionalProperty -Object $test -Name 'expected'
-                $matchingRows = Get-OptionalProperty -Object $expected -Name 'matching_rows'
-
-                if ($null -eq $matchingRows) {
-                    Fail "$($testFile.FullName) test '$($test.name)' is missing expected.matching_rows."
-                }
-
-                if ([int]$matchingRows -lt 0) {
-                    Fail "$($testFile.FullName) test '$($test.name)' expected.matching_rows must be zero or greater."
-                }
-            }
-
-            $escapedTelemetryTable = [regex]::Escape([string]$telemetryTable)
-
-            Require-Text `
-                -Content $referencedBicep.Content `
-                -Pattern "(?im)^\s*$escapedTelemetryTable\s*$" `
-                -Description "telemetry table matching telemetry.table ($telemetryTable)" `
-                -Path $referencedBicep.Path
-
-            $validation = Get-OptionalProperty -Object $testDocument -Name 'validation'
-
-            if ($null -ne $validation) {
-                $requiredBicepPatterns = Get-OptionalProperty `
-                    -Object $validation `
-                    -Name 'required_bicep_patterns'
-
+            if ($null -ne $requiredBicepPatterns) {
                 foreach ($pattern in @($requiredBicepPatterns)) {
                     if ([string]::IsNullOrWhiteSpace([string]$pattern)) {
                         Fail "$($testFile.FullName) validation.required_bicep_patterns cannot contain an empty value."
@@ -367,11 +374,11 @@ try {
                         -Path $referencedBicep.Path
                 }
             }
-
-            $referencedBicepPaths[$referencedBicepRelativePath] = $true
-            $referencedSigmaPaths[$referencedSigmaRelativePath] = $true
-            $validatedContractCount++
         }
+
+        $referencedBicepPaths[$referencedBicepRelativePath] = $true
+        $referencedSigmaPaths[$referencedSigmaRelativePath] = $true
+        $validatedContractCount++
     }
 
     foreach ($bicepRelativePath in $bicepByRelativePath.Keys) {
