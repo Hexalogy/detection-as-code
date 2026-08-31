@@ -10,7 +10,7 @@
 the complete chain looks like this: 
 `Entra sign-in` → `SigninLogs ingestion` → `KQL matches` → `Sentinel rule creates an alert`.
 
-## Phase 1 - Prove an Alert
+## Phase 1 - Prove an Alert working
 ### 1. Generate sign-in event
 
 In a private/InPrivate browser window:
