@@ -6,6 +6,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+Write-Host 'VALIDATOR VERSION: PR-branch contract-driven v3'
+
 function Fail {
     param(
         [Parameter(Mandatory)]
