@@ -61,6 +61,17 @@ function Get-OptionalProperty {
         [string]$Name
     )
 
+    if ($null -eq $Object) {
+        return $null
+    }
+
+    if ($Object -is [System.Collections.IDictionary]) {
+        if ($Object.Contains($Name)) {
+            return $Object[$Name]
+        }
+        return $null
+    }
+
     $property = $Object.PSObject.Properties[$Name]
 
     if ($null -eq $property) {
