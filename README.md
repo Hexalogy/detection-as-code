@@ -1,4 +1,5 @@
 
+
 ## Connecting Microsoft Entra --> Log Analytics Workspace
 
 ### Make Sentinel send logs straight to LAW
@@ -9,8 +10,8 @@
 the complete chain looks like this: 
 `Entra sign-in` → `SigninLogs ingestion` → `KQL matches` → `Sentinel rule creates an alert`.
 
-# Prove an Alert
-## 1. Generate sign-in event
+## Phase 1 - Prove an Alert
+### 1. Generate sign-in event
 
 In a private/InPrivate browser window:
 
@@ -38,7 +39,7 @@ SigninLogs
 ```
 It should return a row of when you logged in.
 
-## 2. Generate failed sign-in event
+### 2. Generate failed sign-in event
 
 - ive reduce the test threshold in the bicep `detections/sentinel/scheduled/multiple-failed-signins.bicep` file to `2`
 - `| where FailedAttempts >= 2`
@@ -47,12 +48,14 @@ It should return a row of when you logged in.
 - I've created a test account called "DaC Test User" (dac-test@renegadexwarslive.onmicrosoft.com) so I can purposely sign-in with the wrong password to trigger the alert
 <img width="1555" height="634" alt="image" src="https://github.com/user-attachments/assets/b57cc00f-3648-41dc-9721-957730ee3d87" />
 
-UPDATE: after some troubleshooting, looks like i needed to connect Microsoft Sentinel to Microsoft Defender first, in order to do that, id have to add Sentinel Workspace onto Defender.
+UPDATE: after some troubleshooting, looks like I needed to connect Microsoft Sentinel to Microsoft Defender first, in order to do that, id have to add Sentinel Workspace onto Defender.
 <img width="1643" height="518" alt="image" src="https://github.com/user-attachments/assets/4477a93a-c609-4c26-848b-cbb040354022" />
 
 voila! now I can see the alert ("DaC - Multiple failed sign-ins from one IP") on Sentinel.
 *p.s. the screenshot below is outdated because then Azure will tell you to go to Defender shortly after*
 <img width="1469" height="654" alt="image" src="https://github.com/user-attachments/assets/f12afab3-0df0-4807-b6f5-77816624d433" />
+
+### Troubleshoot Steps to show Alerts on MS Defender
 
 1:32 8/24/26:
 ive been trying to figure out how to get the **Rules** to show on Defender and it has finally worked. I think the issue was that you see the changes until you sign out and then back in to force to 'refresh'
@@ -68,8 +71,7 @@ Finally, got the **Alerts** and Incidents to show up in Microsoft Defender (MS h
 The problem was URBAC permission issue
 
 
-## 3. Summary of the Full Fix Chain
------------------------------
+### 3. Summary of the Full Fix Chain
 
 The complete resolution path across this whole troubleshooting session was:
 
@@ -85,17 +87,26 @@ The complete resolution path across this whole troubleshooting session was:
     
 6.  Found the true blocker: the **auto-imported URBAC role permission sets** were incomplete, missing "Alerts (manage)," and switching to "All read and manage permissions" fixed visibility.
 
-## Phase 2 - Added `detections/sigma/multiple-failed-signins.yml`
+## Phase 2 - First Sigma File
+
+`detections/sigma/multiple-failed-signins.yml`
+Sigma file is basically a **recipe written in plain English** ("brown the onions, then add garlic") and the Bicep file is **that same recipe translated into French, with exact gram measurements, for a specific French cookbook publisher**.
+
+-   The recipe idea - "detect a successful role assignment" - is the Sigma file.
+    
+-   The Bicep file is *that* idea rewritten in Azure's specific query language (KQL) that only Azure can understand.
+
+If you ever switched SIEM vendors - say, to Splunk - you would **not** rewrite the Sigma file. You'd feed it to a converter.
 
 So far I have:
 
-- A deployable Sentinel Bicep rule
+- A Sentinel Bicep rule
 
-- A human-readable Sigma counterpart
+- A human-readable Sigma file
 
 - A test contract with positive and negative cases
 
-- A static validation gate that checks rule/test consistency
+- A validation gate that checks rule/test consistency (`validation.ps1`)
 
 - CI/CD with build, validation, what-if, and deployment
 
@@ -107,20 +118,20 @@ So far I have:
 <img width="1220" height="597" alt="image" src="https://github.com/user-attachments/assets/0cea5fe8-c623-4d95-97a1-6e32c5607d0f" />
 
 ### Implement Azure-RBAC-role-assigment
-Create the new rules in detections/sentinel/scheduled
+- Create a new Bicep rules in detections/sentinel/scheduled
 
-And in detections/sigma.. 
+- A new Sigma yaml file in detections/sigma
 
-New test in detections/tests
+- New Test file in detections/tests
 
 
 ### Implement Validation.ps1
 
 Refactor the following logic: 
 
-**Universal checks for every rule**: stable `ruleGuid`, time bound, `description`, `customDetails`, `incidentConfiguration`, tactic mapping, existing Bicep/Sigma/test references, positive and negative tests.
+- **Universal checks for every rule**: stable `ruleGuid`, time bound, `description`, `customDetails`, `incidentConfiguration`, tactic mapping, existing Bicep/Sigma/test references, positive and negative tests.
 
-**Rule-specific checks from each test contract**: expected table, query operation, success/failure condition, threshold, and aggregation.. only where that detection needs them.
+- **Rule-specific checks from each test contract**: expected table, query operation, success/failure condition, threshold, and aggregation.. only where that detection needs them.
 
 
 
