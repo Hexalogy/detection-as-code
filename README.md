@@ -106,3 +106,28 @@ So far I have:
 
 <img width="1220" height="597" alt="image" src="https://github.com/user-attachments/assets/0cea5fe8-c623-4d95-97a1-6e32c5607d0f" />
 
+### Implement Azure-RBAC-role-assigment
+Create the new rules in detections/sentinel/scheduled
+
+And in detections/sigma.. 
+
+New test in detections/tests
+
+
+### Implement Validation.ps1
+
+Refactor the following logic: 
+
+**Universal checks for every rule**: stable `ruleGuid`, time bound, `description`, `customDetails`, `incidentConfiguration`, tactic mapping, existing Bicep/Sigma/test references, positive and negative tests.
+
+**Rule-specific checks from each test contract**: expected table, query operation, success/failure condition, threshold, and aggregation.. only where that detection needs them.
+
+
+
+### Test Alert
+
+Assign Reader role to the dummy account
+
+Go to Sentinel > Incidents:
+<img width="1974" height="1190" alt="image" src="https://github.com/user-attachments/assets/0e1aefdf-2d77-48cd-abc6-a587763ec156" />
+
